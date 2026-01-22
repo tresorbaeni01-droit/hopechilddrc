@@ -1,0 +1,153 @@
+<!DOCTYPE html><html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HOPE CHILD DRC – Système de gestion</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+body{font-family:Arial,sans-serif;margin:0;background:#f4f6f9}
+header{background:#0b3c5d;color:#fff;padding:15px;display:flex;align-items:center}
+header img{height:50px;margin-right:15px}
+nav{background:#1d5c8b;color:#fff;display:flex;flex-wrap:wrap}
+nav button{background:none;border:none;color:#fff;padding:15px;cursor:pointer}
+nav button:hover{background:#144a6b}
+.container{padding:20px}
+.hidden{display:none}
+.card{background:#fff;padding:15px;border-radius:6px;margin-bottom:15px;box-shadow:0 2px 6px rgba(0,0,0,0.1)}
+input,select,textarea{padding:8px;width:100%;margin:5px 0}
+.table{width:100%;border-collapse:collapse}
+.table th,.table td{border:1px solid #ddd;padding:8px;text-align:left}
+@media(max-width:768px){nav{flex-direction:column}}
+</style>
+</head>
+<body><!-- CONNEXION --><div id="login" class="container">
+  <div class="card">
+    <h2>Connexion sécurisée</h2>
+    <input id="user" placeholder="Nom d'utilisateur">
+    <input id="pass" type="password" placeholder="Mot de passe">
+    <button onclick="login()">Connexion</button>
+    <p id="msg" style="color:red"></p>
+  </div>
+</div><!-- APPLICATION --><div id="app" class="hidden">
+<header>
+  <img src="logo_hope_child_drc.png" alt="HOPE CHILD DRC">
+  <div>
+    <h2>HOPE CHILD DRC</h2>
+    <small>Système intégré de gestion des données</small>
+  </div>
+</header><nav>
+  <button onclick="show('dashboard')">Dashboard</button>
+  <button onclick="show('personnel')">Personnel</button>
+  <button onclick="show('materiel')">Matériel</button>
+  <button onclick="show('projets')">Projets</button>
+  <button onclick="show('beneficiaires')">Bénéficiaires</button>
+  <button onclick="show('enqueteurs')">Enquêteurs</button>
+  <button onclick="show('partenaires')">Partenaires</button>
+</nav><div class="container"><!-- DASHBOARD --><div id="dashboard" class="card">
+<h3>?? Tableau de bord</h3>
+<canvas id="stats"></canvas>
+</div><!-- PERSONNEL --><div id="personnel" class="card hidden">
+<h3>?? Personnel</h3>
+<input placeholder="Nom et prénom" id="p_nom">
+<input placeholder="Fonction" id="p_fonction">
+<button onclick="addPersonnel()">Ajouter</button>
+<table class="table" id="p_table"></table>
+</div><!-- AUTRES MODULES STRUCTURE --><div id="materiel" class="card hidden">
+<h3>??? Matériel</h3>
+<input placeholder="Nom / Désignation" id="m_nom">
+<input placeholder="Catégorie" id="m_cat">
+<input placeholder="État" id="m_etat">
+<button onclick="addMateriel()">Ajouter</button>
+<table class="table" id="m_table"></table>
+</div><div id="projets" class="card hidden">
+<h3>?? Projets</h3>
+<input placeholder="Nom du projet" id="pr_nom">
+<input placeholder="Responsable" id="pr_resp">
+<button onclick="addProjet()">Ajouter</button>
+<table class="table" id="pr_table"></table>
+</div><div id="beneficiaires" class="card hidden">
+<h3>?? Bénéficiaires</h3>
+<input placeholder="Nom / Prénom" id="b_nom">
+<input placeholder="Zone" id="b_zone">
+<button onclick="addBenef()">Ajouter</button>
+<table class="table" id="b_table"></table>
+</div><div id="enqueteurs" class="card hidden">
+<h3>?? Enquêteurs</h3>
+<input placeholder="Nom / Prénom" id="e_nom">
+<input placeholder="Zone de couverture" id="e_zone">
+<button onclick="addEnqueteur()">Ajouter</button>
+<table class="table" id="e_table"></table>
+</div><div id="partenaires" class="card hidden">
+<h3>?? Partenaires</h3>
+<input placeholder="Nom de l’organisation" id="pa_nom">
+<input placeholder="Contact" id="pa_contact">
+<button onclick="addPartenaire()">Ajouter</button>
+<table class="table" id="pa_table"></table>
+</div></div>
+</div><script>
+/* UTILISATEURS */
+const users={admin:{pass:'1234',role:'admin'},user:{pass:'1111',role:'user'}};
+let currentRole='';
+
+function login(){
+ let u=user.value,p=pass.value;
+ if(users[u]&&users[u].pass===p){
+   currentRole=users[u].role;
+   document.getElementById('login').classList.add('hidden');
+   document.getElementById('app').classList.remove('hidden');
+   loadAllData();
+   drawChart();
+ } else document.getElementById('msg').innerText='Identifiants incorrects';
+}
+
+function show(id){
+ document.querySelectorAll('.container .card').forEach(c=>c.classList.add('hidden'));
+ document.getElementById(id).classList.remove('hidden');
+}
+
+/* DATA STORAGE */
+let personnel=JSON.parse(localStorage.getItem('personnel')||'[]');
+let materiel=JSON.parse(localStorage.getItem('materiel')||'[]');
+let projets=JSON.parse(localStorage.getItem('projets')||'[]');
+let beneficiaires=JSON.parse(localStorage.getItem('beneficiaires')||'[]');
+let enqueteurs=JSON.parse(localStorage.getItem('enqueteurs')||'[]');
+let partenaires=JSON.parse(localStorage.getItem('partenaires')||'[]');
+
+function saveAll(){
+ localStorage.setItem('personnel',JSON.stringify(personnel));
+ localStorage.setItem('materiel',JSON.stringify(materiel));
+ localStorage.setItem('projets',JSON.stringify(projets));
+ localStorage.setItem('beneficiaires',JSON.stringify(beneficiaires));
+ localStorage.setItem('enqueteurs',JSON.stringify(enqueteurs));
+ localStorage.setItem('partenaires',JSON.stringify(partenaires));
+ loadAllData();
+ drawChart();
+}
+
+/* FONCTIONS D'ENREGISTREMENT ET TABLES */
+function addPersonnel(){personnel.push({nom:p_nom.value,fonction:p_fonction.value});saveAll();}
+function addMateriel(){materiel.push({nom:m_nom.value,cat:m_cat.value,etat:m_etat.value});saveAll();}
+function addProjet(){projets.push({nom:pr_nom.value,responsable:pr_resp.value});saveAll();}
+function addBenef(){beneficiaires.push({nom:b_nom.value,zone:b_zone.value});saveAll();}
+function addEnqueteur(){enqueteurs.push({nom:e_nom.value,zone:e_zone.value});saveAll();}
+function addPartenaire(){partenaires.push({nom:pa_nom.value,contact:pa_contact.value});saveAll();}
+
+function loadAllData(){
+ p_table.innerHTML='<tr><th>Nom</th><th>Fonction</th></tr>';personnel.forEach(p=>p_table.innerHTML+=`<tr><td>${p.nom}</td><td>${p.fonction}</td></tr>`);
+ m_table.innerHTML='<tr><th>Nom</th><th>Catégorie</th><th>État</th></tr>';materiel.forEach(m=>m_table.innerHTML+=`<tr><td>${m.nom}</td><td>${m.cat}</td><td>${m.etat}</td></tr>`);
+ pr_table.innerHTML='<tr><th>Nom</th><th>Responsable</th></tr>';projets.forEach(pr=>pr_table.innerHTML+=`<tr><td>${pr.nom}</td><td>${pr.responsable}</td></tr>`);
+ b_table.innerHTML='<tr><th>Nom</th><th>Zone</th></tr>';beneficiaires.forEach(b=>b_table.innerHTML+=`<tr><td>${b.nom}</td><td>${b.zone}</td></tr>`);
+ e_table.innerHTML='<tr><th>Nom</th><th>Zone</th></tr>';enqueteurs.forEach(e=>e_table.innerHTML+=`<tr><td>${e.nom}</td><td>${e.zone}</td></tr>`);
+ pa_table.innerHTML='<tr><th>Nom</th><th>Contact</th></tr>';partenaires.forEach(pa=>pa_table.innerHTML+=`<tr><td>${pa.nom}</td><td>${pa.contact}</td></tr>`);
+}
+
+/* DASHBOARD */
+function drawChart(){
+ const ctx=document.getElementById('stats');
+ if(ctx.chart){ctx.chart.destroy();}
+ ctx.chart=new Chart(ctx,{type:'bar',data:{labels:['Personnel','Matériel','Projets','Bénéficiaires','Enquêteurs','Partenaires'],datasets:[{label:'Total',data:[personnel.length,materiel.length,projets.length,beneficiaires.length,enqueteurs.length,partenaires.length],backgroundColor:['#0b3c5d','#1d5c8b','#3399ff','#66ccff','#99ccff','#cce6ff']}]},options:{responsive:true,plugins:{legend:{display:false}}}});
+}
+
+loadAllData();
+</script></body>
+
